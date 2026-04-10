@@ -3,3 +3,5 @@
 .DS_Store
 *.db
 *.pid
+spec.md
+docs/
