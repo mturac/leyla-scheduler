@@ -1,0 +1,26 @@
+[package]
+name = "leyla"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "CLI for Leyla durable scheduler"
+
+[[bin]]
+name = "leyla"
+path = "src/main.rs"
+
+[dependencies]
+leyla-core.workspace = true
+leyla-executors.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+chrono.workspace = true
+clap = { version = "4", features = ["derive"] }
+tabled = "0.17"
+dirs = "6"
+anyhow = "1"
+libc = "0.2"

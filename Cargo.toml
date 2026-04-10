@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = ["crates/leyla-core", "crates/leyla-executors", "crates/leyla-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+description = "Durable scheduler and resumable task orchestrator for Claude Code"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+thiserror = "2"
+tokio-util = { version = "0.7", features = ["rt"] }
+leyla-core = { path = "crates/leyla-core" }
+leyla-executors = { path = "crates/leyla-executors" }

@@ -1,0 +1,21 @@
+[package]
+name = "leyla-executors"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Execution adapters for Leyla scheduler"
+
+[dependencies]
+leyla-core.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+anyhow = "1"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = "3"
