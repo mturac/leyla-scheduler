@@ -8,7 +8,7 @@ use crate::scheduler::claim::LeaseManager;
 use crate::scheduler::due::DueRunMaterializer;
 use crate::scheduler::recovery::RecoveryManager;
 use crate::store::{LeylaStore, RunFilter};
-use crate::types::{JobRun, LeylaJob, RunStatus, Schedule};
+use crate::types::{JobRun, LeylaJob};
 
 // ── EngineConfig ──────────────────────────────────────────────────────────────
 
@@ -190,7 +190,7 @@ mod tests {
     use super::*;
     use crate::clock::FakeClock;
     use crate::store::memory::MemoryStore;
-    use crate::types::{ExecutorSpec, LeylaJob, Schedule};
+    use crate::types::{ExecutorSpec, LeylaJob, RunStatus, Schedule};
     use chrono::Utc;
     use std::sync::Arc;
 

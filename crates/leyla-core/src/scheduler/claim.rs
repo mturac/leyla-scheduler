@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use crate::clock::Clock;
-use crate::store::{LeylaStore, Result, RunFilter};
-use crate::types::{ConcurrencyPolicy, JobRun, RunStatus};
+use crate::store::{LeylaStore, Result};
+use crate::types::{ConcurrencyPolicy, JobRun};
 
 pub struct LeaseManager {
     store: Arc<dyn LeylaStore>,
     clock: Arc<dyn Clock>,
     instance_id: String,
     batch_size: u32,
+    #[allow(dead_code)]
     lease_ttl_ms: u64,
 }
 
@@ -78,7 +79,7 @@ mod tests {
     use crate::clock::FakeClock;
     use crate::store::memory::MemoryStore;
     use crate::store::RunPatch;
-    use crate::types::{ExecutorSpec, LeylaJob, Schedule};
+    use crate::types::{ExecutorSpec, LeylaJob, RunStatus, Schedule};
     use chrono::Utc;
 
     fn make_store() -> Arc<MemoryStore> {

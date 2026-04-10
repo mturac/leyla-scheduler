@@ -5,8 +5,6 @@ use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
-use uuid::Uuid;
-
 use crate::types::{DeadLetter, JobRun, LeylaJob, RunStatus};
 
 use super::{LeylaStore, Result, RunFilter, RunPatch, StoreError};
@@ -246,6 +244,7 @@ mod tests {
     use super::*;
     use crate::types::{ExecutorSpec, LeylaJob, Schedule};
     use chrono::Duration as D;
+    use uuid::Uuid;
 
     fn make_job() -> LeylaJob {
         LeylaJob::new(

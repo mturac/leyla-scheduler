@@ -26,7 +26,7 @@ impl FakeClock {
 
     pub fn advance(&self, delta: TimeDelta) {
         let mut t = self.inner.lock().unwrap();
-        *t = *t + delta;
+        *t += delta;
     }
 
     pub fn set(&self, time: DateTime<Utc>) {

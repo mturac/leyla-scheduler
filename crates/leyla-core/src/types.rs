@@ -50,36 +50,26 @@ pub enum RunStatus {
 
 // ── ConcurrencyPolicy ─────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ConcurrencyPolicy {
     Allow,
+    #[default]
     ForbidOverlap,
     QueueOne,
     ReplaceRunning,
 }
 
-impl Default for ConcurrencyPolicy {
-    fn default() -> Self {
-        ConcurrencyPolicy::ForbidOverlap
-    }
-}
-
 // ── MisfirePolicy ─────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum MisfirePolicy {
     RunImmediately,
     Skip,
+    #[default]
     Coalesce,
     ReplayAll { max_catchup: Option<u32> },
-}
-
-impl Default for MisfirePolicy {
-    fn default() -> Self {
-        MisfirePolicy::Coalesce
-    }
 }
 
 // ── RetryStrategy & RetryPolicy ───────────────────────────────────────────────

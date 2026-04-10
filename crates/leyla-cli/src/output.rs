@@ -7,10 +7,7 @@ pub fn print_jobs_table(jobs: &[LeylaJob]) {
         return;
     }
 
-    println!(
-        "{:<36}  {:<30}  {:<7}  {}",
-        "ID", "NAME", "ENABLED", "NEXT RUN"
-    );
+    println!("{:<36}  {:<30}  {:<7}  NEXT RUN", "ID", "NAME", "ENABLED");
     println!("{}", "─".repeat(100));
     for job in jobs {
         let next = job
@@ -69,8 +66,8 @@ pub fn print_runs_table(runs: &[JobRun]) {
     }
 
     println!(
-        "{:<8}  {:<36}  {:<12}  {:<7}  {}",
-        "RUN ID", "JOB", "STATUS", "ATTEMPT", "SCHEDULED FOR"
+        "{:<8}  {:<36}  {:<12}  {:<7}  SCHEDULED FOR",
+        "RUN ID", "JOB", "STATUS", "ATTEMPT"
     );
     println!("{}", "─".repeat(100));
     for run in runs {
