@@ -224,7 +224,7 @@ mod tests {
     #[tokio::test]
     async fn schedule_and_trigger_manual_job() {
         let engine = make_engine();
-        let job = LeylaJob::new("manual-job", Schedule::Manual, executor());
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
         let job_id = job.id.to_string();
 
         engine.schedule(job).await.unwrap();
@@ -238,7 +238,7 @@ mod tests {
     #[tokio::test]
     async fn pause_and_resume_job() {
         let engine = make_engine();
-        let job = LeylaJob::new("pausable-job", Schedule::Manual, executor());
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
         let job_id = job.id.to_string();
 
         engine.schedule(job).await.unwrap();
@@ -257,7 +257,7 @@ mod tests {
         let engine = make_engine();
         let job1 = LeylaJob::new("job-1", Schedule::Manual, executor());
         let job2 = LeylaJob::new("job-2", Schedule::Manual, executor());
-        let id1 = job1.id.to_string();
+        let id1 = job1.id.clone();
 
         engine.schedule(job1).await.unwrap();
         engine.schedule(job2).await.unwrap();

@@ -156,7 +156,7 @@ impl LeylaStore for MemoryStore {
             .values()
             .filter(|r| {
                 if let Some(ref jid) = filter.job_id {
-                    if r.job_id.to_string() != *jid {
+                    if r.job_id != *jid {
                         return false;
                     }
                 }
@@ -222,7 +222,7 @@ impl LeylaStore for MemoryStore {
             .runs
             .values()
             .filter(|r| {
-                r.job_id.to_string() == job_id
+                r.job_id == job_id
                     && matches!(
                         r.status,
                         RunStatus::Leased | RunStatus::Dispatched | RunStatus::Running
@@ -248,7 +248,7 @@ mod tests {
 
     fn make_job() -> LeylaJob {
         LeylaJob::new(
-            "test-job",
+            uuid::Uuid::new_v4().to_string(),
             Schedule::Manual,
             ExecutorSpec::LocalHandler {
                 handler_key: "k".into(),
@@ -256,7 +256,7 @@ mod tests {
         )
     }
 
-    fn make_run(job_id: Uuid, scheduled_for: DateTime<Utc>) -> JobRun {
+    fn make_run(job_id: impl Into<String>, scheduled_for: DateTime<Utc>) -> JobRun {
         JobRun::new_scheduled(job_id, scheduled_for, 5)
     }
 
@@ -286,11 +286,11 @@ mod tests {
     async fn claim_due_runs() {
         let store = MemoryStore::new();
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         let past = Utc::now() - D::seconds(10);
-        let run = make_run(job_id, past);
+        let run = make_run(job_id.clone(), past);
         store.insert_run(run).await.unwrap();
 
         let now = Utc::now();
@@ -307,10 +307,10 @@ mod tests {
     async fn update_run_applies_patch() {
         let store = MemoryStore::new();
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let run = make_run(job_id, Utc::now());
+        let run = make_run(job_id.clone(), Utc::now());
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 
@@ -328,10 +328,10 @@ mod tests {
     async fn count_active_runs() {
         let store = MemoryStore::new();
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let r1 = make_run(job_id, Utc::now());
+        let r1 = make_run(job_id.clone(), Utc::now());
         let r1_id = r1.run_id.to_string();
         store.insert_run(r1).await.unwrap();
         store
@@ -345,7 +345,7 @@ mod tests {
             .await
             .unwrap();
 
-        let r2 = make_run(job_id, Utc::now());
+        let r2 = make_run(job_id.clone(), Utc::now());
         let r2_id = r2.run_id.to_string();
         store.insert_run(r2).await.unwrap();
         store
@@ -367,18 +367,18 @@ mod tests {
     async fn list_runs_with_filter() {
         let store = MemoryStore::new();
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         for _ in 0..3 {
-            let r = make_run(job_id, Utc::now());
+            let r = make_run(job_id.clone(), Utc::now());
             store.insert_run(r).await.unwrap();
         }
 
         let other_job = make_job();
-        let other_id = other_job.id;
+        let other_id = other_job.id.clone();
         store.upsert_job(other_job).await.unwrap();
-        let r_other = make_run(other_id, Utc::now());
+        let r_other = make_run(other_id.clone(), Utc::now());
         store.insert_run(r_other).await.unwrap();
 
         let filter = RunFilter {
@@ -394,10 +394,10 @@ mod tests {
     async fn get_stale_runs() {
         let store = MemoryStore::new();
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let run = make_run(job_id, Utc::now());
+        let run = make_run(job_id.clone(), Utc::now());
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 

@@ -83,11 +83,14 @@ pub fn print_runs_table(runs: &[JobRun]) {
     }
 }
 
-fn clip(s: &str, max: usize) -> &str {
+fn clip(s: &str, max: usize) -> String {
     if s.len() <= max {
-        s
+        s.to_string()
     } else {
-        &s[..max]
+        s.char_indices()
+            .take_while(|(i, _)| *i < max)
+            .map(|(_, c)| c)
+            .collect()
     }
 }
 

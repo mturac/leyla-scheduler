@@ -20,7 +20,6 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 chrono.workspace = true
 clap = { version = "4", features = ["derive"] }
-tabled = "0.17"
 dirs = "6"
 anyhow = "1"
 libc = "0.2"

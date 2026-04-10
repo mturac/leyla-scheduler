@@ -130,7 +130,7 @@ pub enum ExecutorSpec {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LeylaJob {
-    pub id: Uuid,
+    pub id: String,
     pub name: String,
     pub enabled: bool,
     pub schedule: Schedule,
@@ -151,17 +151,18 @@ pub struct LeylaJob {
 }
 
 impl LeylaJob {
-    pub fn new(name: impl Into<String>, schedule: Schedule, executor: ExecutorSpec) -> Self {
+    pub fn new(id: impl Into<String>, schedule: Schedule, executor: ExecutorSpec) -> Self {
         let now = Utc::now();
+        let id_str: String = id.into();
         LeylaJob {
-            id: Uuid::new_v4(),
-            name: name.into(),
+            id: id_str.clone(),
+            name: id_str,
             enabled: true,
             schedule,
             executor,
             concurrency: ConcurrencyPolicy::default(),
             retry: RetryPolicy::default(),
-            timeout_ms: 30_000,
+            timeout_ms: 300_000,
             misfire: MisfirePolicy::default(),
             tags: Vec::new(),
             metadata: serde_json::Value::Null,
@@ -181,7 +182,7 @@ impl LeylaJob {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobRun {
     pub run_id: Uuid,
-    pub job_id: Uuid,
+    pub job_id: String,
     pub scheduled_for: DateTime<Utc>,
     pub status: RunStatus,
     pub attempt: u32,
@@ -200,14 +201,14 @@ pub struct JobRun {
 }
 
 impl JobRun {
-    pub fn new_scheduled(job_id: Uuid, scheduled_for: DateTime<Utc>, max_attempts: u32) -> Self {
+    pub fn new_scheduled(job_id: impl Into<String>, scheduled_for: DateTime<Utc>, max_attempts: u32) -> Self {
         let now = Utc::now();
         JobRun {
             run_id: Uuid::new_v4(),
-            job_id,
+            job_id: job_id.into(),
             scheduled_for,
             status: RunStatus::Scheduled,
-            attempt: 0,
+            attempt: 1,
             max_attempts,
             lease_owner: None,
             lease_expires_at: None,

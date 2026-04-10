@@ -15,11 +15,10 @@ impl ShellExecutor {
 
     fn clip(&self, s: String) -> String {
         if s.len() > self.max_output_bytes {
-            s.chars()
-                .collect::<String>()
-                .bytes()
-                .take(self.max_output_bytes)
-                .map(|b| b as char)
+            let max = self.max_output_bytes;
+            s.char_indices()
+                .take_while(|(i, _)| *i < max)
+                .map(|(_, c)| c)
                 .collect()
         } else {
             s

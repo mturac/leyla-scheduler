@@ -102,12 +102,12 @@ mod tests {
         let now = Utc::now();
         let clock = Arc::new(FakeClock::new(now));
 
-        let job = LeylaJob::new("job", Schedule::Manual, executor());
-        let job_id = job.id;
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         let past = now - chrono::Duration::seconds(10);
-        let run = JobRun::new_scheduled(job_id, past, 3);
+        let run = JobRun::new_scheduled(job_id.clone(), past, 3);
         store.insert_run(run).await.unwrap();
 
         let manager = make_manager(store.clone(), clock.clone());
@@ -124,13 +124,13 @@ mod tests {
         let now = Utc::now();
         let clock = Arc::new(FakeClock::new(now));
 
-        let job = LeylaJob::new("job", Schedule::Manual, executor());
-        let job_id = job.id;
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         let past = now - chrono::Duration::seconds(10);
         for _ in 0..10 {
-            let run = JobRun::new_scheduled(job_id, past, 3);
+            let run = JobRun::new_scheduled(job_id.clone(), past, 3);
             store.insert_run(run).await.unwrap();
         }
 
@@ -145,13 +145,13 @@ mod tests {
         let now = Utc::now();
         let clock = Arc::new(FakeClock::new(now));
 
-        let job = LeylaJob::new("job", Schedule::Manual, executor());
-        let job_id = job.id;
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
+        let job_id = job.id.clone();
         let job_id_str = job_id.to_string();
         store.upsert_job(job).await.unwrap();
 
         // Insert a Running run (active)
-        let running_run = JobRun::new_scheduled(job_id, now, 3);
+        let running_run = JobRun::new_scheduled(job_id.clone(), now, 3);
         let running_run_id = running_run.run_id.to_string();
         store.insert_run(running_run.clone()).await.unwrap();
         // Advance through state machine: Scheduled -> Leased -> Dispatched -> Running
@@ -187,7 +187,7 @@ mod tests {
             .unwrap();
 
         // A due run
-        let due_run = JobRun::new_scheduled(job_id, now - chrono::Duration::seconds(5), 3);
+        let due_run = JobRun::new_scheduled(job_id.clone(), now - chrono::Duration::seconds(5), 3);
         let due_runs = vec![due_run];
 
         let manager = make_manager(store.clone(), clock);

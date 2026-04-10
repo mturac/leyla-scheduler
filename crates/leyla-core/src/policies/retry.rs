@@ -11,7 +11,7 @@ pub fn compute_delay(policy: &RetryPolicy, attempt: u32) -> u64 {
     };
     let capped = raw.min(policy.max_delay_ms);
     if policy.jitter {
-        apply_jitter(capped)
+        apply_jitter(capped, attempt)
     } else {
         capped
     }
@@ -21,12 +21,13 @@ pub fn should_retry(policy: &RetryPolicy, current_attempt: u32) -> bool {
     current_attempt < policy.max_attempts
 }
 
-fn apply_jitter(delay: u64) -> u64 {
+fn apply_jitter(delay: u64, attempt: u32) -> u64 {
     use std::time::SystemTime;
-    let seed = SystemTime::now()
+    let nanos = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or_default()
         .subsec_nanos();
+    let seed = nanos ^ (attempt.wrapping_mul(2654435761));
     let factor = 0.5 + (seed as f64 % 1000.0) / 1000.0;
     (delay as f64 * factor) as u64
 }

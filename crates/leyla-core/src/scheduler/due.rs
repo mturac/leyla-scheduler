@@ -41,7 +41,7 @@ impl DueRunMaterializer {
             }
 
             // Create a scheduled run
-            let run = JobRun::new_scheduled(job.id, next_run_at, job.retry.max_attempts);
+            let run = JobRun::new_scheduled(job.id.clone(), next_run_at, job.retry.max_attempts);
             self.store.insert_run(run).await?;
             count += 1;
 

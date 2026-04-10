@@ -103,12 +103,8 @@ pub async fn handle(action: JobAction, store: Arc<dyn LeylaStore>, json: bool) -
                 bail!("--command is required for job add");
             };
 
-            let mut job = LeylaJob::new(name, schedule.clone(), executor);
-            if let Some(custom_id) = id {
-                job.id = custom_id
-                    .parse()
-                    .map_err(|_| anyhow::anyhow!("Invalid UUID for --id"))?;
-            }
+            let job_id = id.unwrap_or_else(|| name.clone());
+            let mut job = LeylaJob::new(job_id, schedule.clone(), executor);
 
             // Compute initial next_run_at
             job.next_run_at = compute_next_run(&schedule, chrono::Utc::now());

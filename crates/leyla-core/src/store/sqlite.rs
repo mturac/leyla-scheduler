@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::types::{DeadLetter, JobRun, LeylaJob, RunStatus};
@@ -57,8 +57,7 @@ fn row_to_run(row: &rusqlite::Row) -> rusqlite::Result<JobRun> {
 
     let run_id = uuid::Uuid::from_str(&run_id_str)
         .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
-    let job_id = uuid::Uuid::from_str(&job_id_str)
-        .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+    let job_id = job_id_str;
 
     let parse_dt = |s: &str| {
         DateTime::parse_from_rfc3339(s)
@@ -111,7 +110,7 @@ const RUN_COLS: &str = "run_id, job_id, scheduled_for, status, attempt, max_atte
 // ── SqliteStore ───────────────────────────────────────────────────────────────
 
 pub struct SqliteStore {
-    conn: Mutex<Connection>,
+    conn: Arc<Mutex<Connection>>,
 }
 
 impl SqliteStore {
@@ -119,14 +118,14 @@ impl SqliteStore {
         let conn = Connection::open(path).map_err(|e| StoreError::Internal(e.to_string()))?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
             .map_err(|e| StoreError::Internal(e.to_string()))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
     }
 
     pub fn open_in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory().map_err(|e| StoreError::Internal(e.to_string()))?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
             .map_err(|e| StoreError::Internal(e.to_string()))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
     }
 }
 
@@ -156,7 +155,7 @@ impl LeylaStore for SqliteStore {
         conn.execute(
             sql,
             params![
-                job.id.to_string(),
+                job.id.clone(),
                 job.name,
                 job.enabled as i64,
                 definition_json,
@@ -214,9 +213,8 @@ impl LeylaStore for SqliteStore {
 
     async fn remove_job(&self, job_id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
-        let sql = ["DELET", "E FROM jobs WHERE id = ?1"].concat();
         let n = conn
-            .execute(&sql, params![job_id])
+            .execute("DELETE FROM jobs WHERE id = ?1", params![job_id])
             .map_err(|e| StoreError::Internal(e.to_string()))?;
         if n == 0 {
             return Err(StoreError::NotFound(job_id.to_string()));
@@ -231,7 +229,7 @@ impl LeylaStore for SqliteStore {
             sql,
             params![
                 run.run_id.to_string(),
-                run.job_id.to_string(),
+                run.job_id.clone(),
                 dt_to_str(run.scheduled_for),
                 status_to_str(run.status),
                 run.attempt,
@@ -269,6 +267,9 @@ impl LeylaStore for SqliteStore {
         let conn = self.conn.lock().unwrap();
         let now_str = dt_to_str(now);
         let lease_exp_str = dt_to_str(now + chrono::Duration::seconds(30));
+
+        conn.execute_batch("BEGIN")
+            .map_err(|e| StoreError::Internal(e.to_string()))?;
 
         let mut stmt = conn
             .prepare("SELECT run_id FROM job_runs WHERE status = 'scheduled' AND scheduled_for <= ?1 LIMIT ?2")
@@ -309,6 +310,9 @@ impl LeylaStore for SqliteStore {
             }
         }
 
+        conn.execute_batch("COMMIT")
+            .map_err(|e| StoreError::Internal(e.to_string()))?;
+
         Ok(claimed)
     }
 
@@ -330,6 +334,9 @@ impl LeylaStore for SqliteStore {
 
         let now_str = dt_to_str(Utc::now());
 
+        conn.execute_batch("BEGIN")
+            .map_err(|e| StoreError::Internal(e.to_string()))?;
+
         macro_rules! upd {
             ($col:expr, $val:expr) => {
                 conn.execute(
@@ -350,6 +357,9 @@ impl LeylaStore for SqliteStore {
         if let Some(v) = patch.attempt       { upd!("attempt",         v); }
         if let Some(v) = patch.output_json   { upd!("output_json",     v.to_string()); }
         if let Some(v) = patch.error_json    { upd!("error_json",      v.to_string()); }
+
+        conn.execute_batch("COMMIT")
+            .map_err(|e| StoreError::Internal(e.to_string()))?;
 
         Ok(())
     }
@@ -526,13 +536,13 @@ mod tests {
 
     fn make_job() -> LeylaJob {
         LeylaJob::new(
-            "sqlite-job",
+            uuid::Uuid::new_v4().to_string(),
             Schedule::Manual,
             ExecutorSpec::LocalHandler { handler_key: "k".into() },
         )
     }
 
-    fn make_run(job_id: uuid::Uuid, scheduled_for: DateTime<Utc>) -> JobRun {
+    fn make_run(job_id: impl Into<String>, scheduled_for: DateTime<Utc>) -> JobRun {
         JobRun::new_scheduled(job_id, scheduled_for, 5)
     }
 
@@ -569,11 +579,11 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = make_store(&dir);
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         let past = Utc::now() - D::seconds(10);
-        let run = make_run(job_id, past);
+        let run = make_run(job_id.clone(), past);
         store.insert_run(run).await.unwrap();
 
         let now = Utc::now();
@@ -590,10 +600,10 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = make_store(&dir);
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let run = make_run(job_id, Utc::now());
+        let run = make_run(job_id.clone(), Utc::now());
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 
@@ -611,10 +621,10 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = make_store(&dir);
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let run = make_run(job_id, Utc::now());
+        let run = make_run(job_id.clone(), Utc::now());
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 
@@ -637,15 +647,15 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = make_store(&dir);
         let job = make_job();
-        let job_id = job.id;
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let r1 = make_run(job_id, Utc::now());
+        let r1 = make_run(job_id.clone(), Utc::now());
         let r1_id = r1.run_id.to_string();
         store.insert_run(r1).await.unwrap();
         store.update_run(&r1_id, RunPatch { status: Some(RunStatus::Running), ..Default::default() }).await.unwrap();
 
-        let r2 = make_run(job_id, Utc::now());
+        let r2 = make_run(job_id.clone(), Utc::now());
         let r2_id = r2.run_id.to_string();
         store.insert_run(r2).await.unwrap();
         store.update_run(&r2_id, RunPatch { status: Some(RunStatus::Succeeded), ..Default::default() }).await.unwrap();

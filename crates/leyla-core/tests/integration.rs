@@ -27,7 +27,7 @@ async fn full_lifecycle_schedule_trigger_claim() {
     let engine = make_engine(store.clone(), clock.clone());
 
     // Schedule a manual job
-    let job = LeylaJob::new("manual-test-job", Schedule::Manual, executor());
+    let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
     let job_id = job.id.to_string();
     engine.schedule(job).await.unwrap();
 

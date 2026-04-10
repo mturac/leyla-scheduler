@@ -116,6 +116,15 @@ impl RecoveryManager {
 
         for run in retry_runs {
             if can_transition(run.status, RunStatus::Scheduled) {
+                // Check if enough time has elapsed since finished_at (retry delay heuristic)
+                let base_delay = chrono::Duration::seconds(1);
+                let ready = run
+                    .finished_at
+                    .map(|fa| fa + base_delay <= now)
+                    .unwrap_or(true);
+                if !ready {
+                    continue;
+                }
                 self.store
                     .update_run(
                         &run.run_id.to_string(),
@@ -159,12 +168,12 @@ mod tests {
         let now = Utc::now();
         let clock = Arc::new(FakeClock::new(now));
 
-        let job = LeylaJob::new("job", Schedule::Manual, executor());
-        let job_id = job.id;
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         // Create a run that's been leased with an expired lease
-        let run = JobRun::new_scheduled(job_id, now - chrono::Duration::seconds(60), 3);
+        let run = JobRun::new_scheduled(job_id.clone(), now - chrono::Duration::seconds(60), 3);
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 
@@ -200,13 +209,13 @@ mod tests {
         let now = Utc::now();
         let clock = Arc::new(FakeClock::new(now));
 
-        let job = LeylaJob::new("job", Schedule::Manual, executor());
-        let job_id = job.id;
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
         // max_attempts = 2, attempt = 2 → exhausted; use Running status
         // so we can transition Running -> Orphaned -> DeadLetter
-        let run = JobRun::new_scheduled(job_id, now - chrono::Duration::seconds(60), 2);
+        let run = JobRun::new_scheduled(job_id.clone(), now - chrono::Duration::seconds(60), 2);
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 
@@ -242,11 +251,11 @@ mod tests {
         let now = Utc::now();
         let clock = Arc::new(FakeClock::new(now));
 
-        let job = LeylaJob::new("job", Schedule::Manual, executor());
-        let job_id = job.id;
+        let job = LeylaJob::new(uuid::Uuid::new_v4().to_string(), Schedule::Manual, executor());
+        let job_id = job.id.clone();
         store.upsert_job(job).await.unwrap();
 
-        let run = JobRun::new_scheduled(job_id, now, 3);
+        let run = JobRun::new_scheduled(job_id.clone(), now, 3);
         let run_id = run.run_id.to_string();
         store.insert_run(run).await.unwrap();
 
