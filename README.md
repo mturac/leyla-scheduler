@@ -780,3 +780,17 @@ Licensed under either of:
 - [MIT License](LICENSE-MIT)
 
 at your option.
+
+---
+
+## Part of [mturac/tools](https://github.com/mturac/tools)
+
+This project is part of an open-source toolkit for AI-augmented engineering — Claude Code plugins, MCP servers, security scanners, schedulers, and dev-productivity utilities. See the [hub](https://github.com/mturac/tools) for the full list.
+
+Install every Claude Code plugin from one place:
+
+```text
+/plugin marketplace add mturac/claude-plugin-marketplace
+/plugin install leyla-scheduler
+```
+
